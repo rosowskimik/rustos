@@ -14,11 +14,15 @@ pub extern "C" fn _start() -> ! {
     test_main();
 
     rust_os::init();
-
     println!("Hello World!");
-    x86_64::instructions::interrupts::int3();
-    println!("It did not crash!");
 
+    fn stack_overflow() {
+        stack_overflow();
+    }
+
+    stack_overflow();
+
+    println!("It did not crash!");
     loop {}
 }
 
