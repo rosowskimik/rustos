@@ -143,24 +143,29 @@ pub fn _print(args: fmt::Arguments) {
     WRITER.lock().write_fmt(args).unwrap();
 }
 
-#[test_case]
-fn test_println_simple() {
-    println!("test_println_simple output");
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[test_case]
-fn test_println_many() {
-    for _ in 0..200 {
-        println!("test_println_many output");
+    #[test_case]
+    fn println_simple() {
+        println!("test_println_simple output");
     }
-}
 
-#[test_case]
-fn test_println_output() {
-    let s = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
-    println!("{}", s);
-    for (i, c) in s.chars().enumerate() {
-        let screen_char = WRITER.lock().buffer.chars[BUFFER_HEGHT - 2][i].read();
-        assert_eq!(char::from(screen_char.ascii_character), c);
+    #[test_case]
+    fn println_many() {
+        for _ in 0..200 {
+            println!("test_println_many output");
+        }
+    }
+
+    #[test_case]
+    fn println_output() {
+        let s = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
+        println!("{}", s);
+        for (i, c) in s.chars().enumerate() {
+            let screen_char = WRITER.lock().buffer.chars[BUFFER_HEGHT - 2][i].read();
+            assert_eq!(char::from(screen_char.ascii_character), c);
+        }
     }
 }

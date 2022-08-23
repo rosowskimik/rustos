@@ -1,5 +1,4 @@
-use ::core::fmt;
-use core::fmt::Write;
+use core::fmt::{self, Write};
 
 use spin::{Lazy, Mutex};
 use uart_16550::SerialPort;
