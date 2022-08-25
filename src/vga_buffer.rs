@@ -1,6 +1,7 @@
 use core::fmt::{self, Write};
 use spin::{Lazy, Mutex};
 use volatile::Volatile;
+use x86_64::instructions;
 
 const BUFFER_HEGHT: usize = 25;
 const BUFFER_WIDTH: usize = 80;
@@ -140,7 +141,9 @@ macro_rules! println {
 
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
-    WRITER.lock().write_fmt(args).unwrap();
+    instructions::interrupts::without_interrupts(|| {
+        WRITER.lock().write_fmt(args).unwrap();
+    });
 }
 
 #[cfg(test)]
@@ -162,10 +165,14 @@ mod tests {
     #[test_case]
     fn println_output() {
         let s = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
-        println!("{}", s);
-        for (i, c) in s.chars().enumerate() {
-            let screen_char = WRITER.lock().buffer.chars[BUFFER_HEGHT - 2][i].read();
-            assert_eq!(char::from(screen_char.ascii_character), c);
-        }
+
+        instructions::interrupts::without_interrupts(|| {
+            let mut writer = WRITER.lock();
+            writeln!(writer, "\n{}", s).expect("writeln failed");
+            for (i, c) in s.chars().enumerate() {
+                let screen_char = writer.buffer.chars[BUFFER_HEGHT - 2][i].read();
+                assert_eq!(char::from(screen_char.ascii_character), c);
+            }
+        });
     }
 }

@@ -6,7 +6,7 @@
 
 use core::panic::PanicInfo;
 
-use rust_os::{self, println};
+use rust_os::{self, hlt_loop, println};
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
@@ -16,21 +16,15 @@ pub extern "C" fn _start() -> ! {
     rust_os::init();
     println!("Hello World!");
 
-    fn stack_overflow() {
-        stack_overflow();
-    }
-
-    stack_overflow();
-
     println!("It did not crash!");
-    loop {}
+    hlt_loop();
 }
 
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     println!("{}", info);
-    loop {}
+    hlt_loop();
 }
 
 #[cfg(test)]
