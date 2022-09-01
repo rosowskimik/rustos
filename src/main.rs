@@ -6,15 +6,26 @@
 
 use core::panic::PanicInfo;
 
-use rust_os::{self, hlt_loop, println};
+use bootloader::{entry_point, BootInfo};
+use rust_os::{
+    self, hlt_loop,
+    memory::{self, BootInfoFrameAllocator},
+    println,
+};
+use x86_64::VirtAddr;
 
-#[no_mangle]
-pub extern "C" fn _start() -> ! {
+entry_point!(kernel_main);
+
+fn kernel_main(boot_info: &'static BootInfo) -> ! {
     #[cfg(test)]
     test_main();
-
     rust_os::init();
+
     println!("Hello World!");
+
+    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
+    let mut _mapper = unsafe { memory::init(phys_mem_offset) };
+    let mut _frame_allocator = unsafe { BootInfoFrameAllocator::init(&boot_info.memory_map) };
 
     println!("It did not crash!");
     hlt_loop();
