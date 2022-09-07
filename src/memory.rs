@@ -17,7 +17,7 @@ pub unsafe fn init(phys_mem_offset: VirtAddr) -> OffsetPageTable<'static> {
     OffsetPageTable::new(level_4_table, phys_mem_offset)
 }
 
-pub unsafe fn active_level_4_table(phys_mem_offset: VirtAddr) -> &'static mut PageTable {
+unsafe fn active_level_4_table(phys_mem_offset: VirtAddr) -> &'static mut PageTable {
     let (level_4_table_frame, _) = Cr3::read();
 
     let phys = level_4_table_frame.start_address();

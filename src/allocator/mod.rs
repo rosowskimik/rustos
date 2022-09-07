@@ -1,6 +1,8 @@
+pub mod bump;
+
 use alloc::alloc::{GlobalAlloc, Layout};
 use core::ptr::null_mut;
-use linked_list_allocator::LockedHeap;
+use spin::Mutex;
 use x86_64::{
     structures::paging::{
         mapper::MapToError, FrameAllocator, Mapper, Page, PageTableFlags, Size4KiB,
@@ -8,8 +10,10 @@ use x86_64::{
     VirtAddr,
 };
 
+use self::bump::BumpAllocator;
+
 #[global_allocator]
-static ALLOCATOR: LockedHeap = LockedHeap::empty();
+static ALLOCATOR: Locked<BumpAllocator> = Locked::new(BumpAllocator::new());
 
 #[alloc_error_handler]
 fn alloc_error_handler(layout: Layout) -> ! {
@@ -18,6 +22,22 @@ fn alloc_error_handler(layout: Layout) -> ! {
 
 pub const HEAP_START: usize = 0x4444_4444_0000;
 pub const HEAP_SIZE: usize = 100 * 1024; // 100 KiB
+
+pub struct Locked<T> {
+    inner: Mutex<T>,
+}
+
+impl<T> Locked<T> {
+    pub const fn new(inner: T) -> Self {
+        Self {
+            inner: Mutex::new(inner),
+        }
+    }
+
+    pub fn lock(&self) -> spin::MutexGuard<T> {
+        self.inner.lock()
+    }
+}
 
 pub struct DummyAlloc;
 
@@ -54,8 +74,20 @@ pub fn init_heap(
     }
 
     unsafe {
-        ALLOCATOR.lock().init(HEAP_START as *mut u8, HEAP_SIZE);
+        ALLOCATOR.lock().init(HEAP_START, HEAP_SIZE);
     }
 
     Ok(())
+}
+
+/// Align address downwards.
+///
+/// Returns the greatest x with alignment `align` so that `x <= addr`.
+///
+/// # Panics
+/// Panics if `align` is not a power of two.
+fn align_up(addr: usize, align: usize) -> usize {
+    assert!(align.is_power_of_two(), "align must be a power of two");
+
+    (addr + align - 1) & !(align - 1)
 }
