@@ -1,4 +1,5 @@
 pub mod bump;
+pub mod fixed_size_block;
 pub mod linked_list;
 
 use alloc::alloc::{GlobalAlloc, Layout};
@@ -12,11 +13,13 @@ use x86_64::{
 };
 
 // use self::bump::BumpAllocator;
-use self::linked_list::LinkedListAllocator;
+// use self::linked_list::LinkedListAllocator;
+use self::fixed_size_block::FixedSizeBlockAllocator;
 
 #[global_allocator]
 // static ALLOCATOR: Locked<BumpAllocator> = Locked::new(BumpAllocator::new());
-static ALLOCATOR: Locked<LinkedListAllocator> = Locked::new(LinkedListAllocator::new());
+// static ALLOCATOR: Locked<LinkedListAllocator> = Locked::new(LinkedListAllocator::new());
+static ALLOCATOR: Locked<FixedSizeBlockAllocator> = Locked::new(FixedSizeBlockAllocator::new());
 
 #[alloc_error_handler]
 fn alloc_error_handler(layout: Layout) -> ! {
