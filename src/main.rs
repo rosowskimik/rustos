@@ -14,6 +14,7 @@ use rust_os::{
     self, allocator, hlt_loop,
     memory::{self, BootInfoFrameAllocator},
     println,
+    task::{simple_executor::SimpleExecutor, Task},
 };
 use x86_64::VirtAddr;
 
@@ -32,23 +33,21 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
 
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
 
-    let x = Box::new(41);
-    println!("Box: {}\naddr: {:p}", x, x);
-
-    let mut y = Vec::new();
-    y.extend(0..500);
-    // (0..500).for_each(|i| y.push(i));
-    println!("\nVec: {:?}\naddr: {:p}", &y[..5], y.as_slice());
-
-    let z = Rc::new(42);
-    let z2 = z.clone();
-    println!("\nRc ref count: {}", Rc::strong_count(&z));
-    core::mem::drop(z2);
-    println!("Rc ref count: {}", Rc::strong_count(&z));
-    println!("Rc: {}\naddr: {:p}", z, z);
+    let mut executor = SimpleExecutor::new();
+    executor.spawn(Task::new(print_number_task()));
+    executor.run();
 
     println!("It did not crash!");
     hlt_loop();
+}
+
+async fn async_number() -> u32 {
+    42069
+}
+
+async fn print_number_task() {
+    let number = async_number().await;
+    println!("async number: {}", number);
 }
 
 #[cfg(not(test))]
