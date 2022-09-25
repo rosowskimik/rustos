@@ -1,4 +1,3 @@
-use pc_keyboard::{layouts, DecodedKey, Keyboard, ScancodeSet1};
 use pic8259::ChainedPics;
 use spin::{Lazy, Mutex};
 use x86_64::{
@@ -6,7 +5,7 @@ use x86_64::{
     structures::idt::{InterruptDescriptorTable, InterruptStackFrame},
 };
 
-use crate::{gdt, print, println};
+use crate::{gdt, print, println, task};
 
 pub const PIC_1_OFFSET: u8 = 32;
 pub const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
@@ -75,26 +74,10 @@ extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFr
 }
 
 extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStackFrame) {
-    static KEYBOARD: Lazy<Mutex<Keyboard<layouts::Us104Key, ScancodeSet1>>> = Lazy::new(|| {
-        Mutex::new(Keyboard::new(
-            layouts::Us104Key,
-            ScancodeSet1,
-            pc_keyboard::HandleControl::Ignore,
-        ))
-    });
-
-    let mut keyboard = KEYBOARD.lock();
     let mut port = Port::new(0x60);
-
     let scancode: u8 = unsafe { port.read() };
-    if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
-        if let Some(key) = keyboard.process_keyevent(key_event) {
-            match key {
-                DecodedKey::Unicode(character) => print!("{}", character),
-                DecodedKey::RawKey(key) => print!("{:?}", key),
-            }
-        }
-    }
+
+    task::keyboard::add_scancode(scancode);
 
     unsafe {
         PICS.lock()

@@ -8,15 +8,16 @@ extern crate alloc;
 
 use core::panic::PanicInfo;
 
-use alloc::{boxed::Box, rc::Rc, vec::Vec};
 use bootloader::{entry_point, BootInfo};
 use rust_os::{
     self, allocator, hlt_loop,
     memory::{self, BootInfoFrameAllocator},
     println,
-    task::{simple_executor::SimpleExecutor, Task},
+    task::{keyboard, Task},
 };
 use x86_64::VirtAddr;
+
+use self::rust_os::task::executor::SleepingExecutor;
 
 entry_point!(kernel_main);
 
@@ -33,12 +34,10 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
 
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
 
-    let mut executor = SimpleExecutor::new();
+    let mut executor = SleepingExecutor::new();
     executor.spawn(Task::new(print_number_task()));
+    executor.spawn(Task::new(keyboard::print_keypresses()));
     executor.run();
-
-    println!("It did not crash!");
-    hlt_loop();
 }
 
 async fn async_number() -> u32 {

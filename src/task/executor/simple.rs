@@ -3,8 +3,9 @@ use core::{
     task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
 };
 
-use super::Task;
 use alloc::collections::VecDeque;
+
+use crate::task::Task;
 
 fn dummy_raw_waker() -> RawWaker {
     fn no_op(_: *const ()) {}
